@@ -42,6 +42,8 @@ function fmtRev(n) {
     return '₹' + Math.round(n)
 }
 
+
+
 // ── AI Prediction Engine ──────────────────────────────────
 function generatePredictions(data) {
     const monthRevenue = {}
@@ -131,23 +133,40 @@ export default function Dashboard({ user, onLogout }) {
             header: true, skipEmptyLines: true,
             complete(res) {
                 const cols = res.meta.fields
-                const revCol = cols.find(c => ['revenue', 'amount', 'sales', 'total'].some(k => c.toLowerCase().includes(k))) || cols[0]
-                const catCol = cols.find(c => c.toLowerCase().includes('category'))
-                const cityCol = cols.find(c => c.toLowerCase().includes('city'))
-                const dateCol = cols.find(c => c.toLowerCase().includes('date'))
-                const qtyCol = cols.find(c => c.toLowerCase().includes('quantity') || c.toLowerCase().includes('qty'))
-                const priceCol = cols.find(c => c.toLowerCase().includes('unit_price') || c.toLowerCase().includes('price'))
-                const prodCol = cols.find(c => c.toLowerCase().includes('product'))
+
+                // Revenue column find karo
+                const revCol = cols.find(c => c.toLowerCase() === 'revenue') ||
+                    cols.find(c => ['revenue', 'amount', 'sales', 'total'].some(k => c.toLowerCase().includes(k))) || cols[0]
+
+                // Category column
+                const catCol = cols.find(c => c.toLowerCase() === 'category') ||
+                    cols.find(c => c.toLowerCase().includes('category'))
+
+                // City column  
+                const cityCol = cols.find(c => c.toLowerCase() === 'city') ||
+                    cols.find(c => c.toLowerCase().includes('city'))
+
+                // Date column
+                const dateCol = cols.find(c => c.toLowerCase() === 'order_date') ||
+                    cols.find(c => c.toLowerCase().includes('date'))
+
+                // Quantity column
+                const qtyCol = cols.find(c => c.toLowerCase() === 'quantity') ||
+                    cols.find(c => c.toLowerCase().includes('quantity'))
+
+                // Product column
+                const prodCol = cols.find(c => c.toLowerCase() === 'product_name') ||
+                    cols.find(c => c.toLowerCase().includes('product'))
+
                 const mapped = res.data.map(r => ({
-                    revenue: parseFloat(r[revCol]) || 0,
-                    category: catCol ? r[catCol] : 'Unknown',
-                    city: cityCol ? r[cityCol] : 'Unknown',
-                    date: dateCol ? r[dateCol] : '',
-                    product: prodCol ? r[prodCol] : 'Unknown',
-                    quantity: qtyCol ? parseInt(r[qtyCol]) || 0 : 0,
-                    unit_price: priceCol ? parseFloat(r[priceCol]) || 0 : 0,
-                    ...r
-                })).filter(r => r.revenue > 0)
+                    revenue: Math.abs(parseFloat(r[revCol]) || 0),
+                    category: catCol ? String(r[catCol]) : 'Unknown',
+                    city: cityCol ? String(r[cityCol]) : 'Unknown',
+                    date: dateCol ? String(r[dateCol]) : '',
+                    product: prodCol ? String(r[prodCol]) : 'Unknown',
+                    quantity: qtyCol ? Math.abs(parseInt(r[qtyCol]) || 0) : 0,
+                })).filter(r => r.revenue > 0 && r.revenue < 1e12)
+
                 setData(mapped)
                 setFileName(file.name)
                 setSection('dashboard')
@@ -270,6 +289,29 @@ export default function Dashboard({ user, onLogout }) {
                                 )}
                             </div>
                         </div>
+                        <div
+                            style={{
+                                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                                padding: '20px',
+                                borderRadius: '14px',
+                                marginBottom: '20px',
+                                color: 'white'
+                            }}
+                        >
+                            <h2 style={{ margin: 0 }}>
+                                Welcome back, {user.name} 👋
+                            </h2>
+
+                            <p
+                                style={{
+                                    marginTop: '8px',
+                                    opacity: 0.9,
+                                    fontSize: '14px'
+                                }}
+                            >
+                                Monitor revenue, orders and business performance in real time.
+                            </p>
+                        </div>
 
                         {/* Metrics */}
 
@@ -280,7 +322,23 @@ export default function Dashboard({ user, onLogout }) {
                                 { label: 'Avg order value', value: fmtRev(avgOrder), icon: '📈', color: '#f59e0b' },
                                 { label: 'Units sold', value: totalQty.toLocaleString('en-IN'), icon: '🛒', color: '#8b5cf6' },
                             ].map(m => (
-                                <div key={m.label} style={{ ...card, textAlign: 'center' }}>
+                                <div
+                                    key={m.label}
+                                    style={{
+                                        ...card,
+                                        textAlign: 'center',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.25s ease'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-5px)'
+                                        e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.35)'
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)'
+                                        e.currentTarget.style.boxShadow = 'none'
+                                    }}
+                                >
                                     <div style={{ fontSize: '22px', marginBottom: '6px' }}>{m.icon}</div>
                                     <div style={{ fontSize: '11px', color: '#718096', marginBottom: '6px' }}>{m.label}</div>
                                     <div style={{ fontSize: '22px', fontWeight: '700', color: m.color }}>{m.value}</div>
@@ -290,7 +348,23 @@ export default function Dashboard({ user, onLogout }) {
 
                         {/* Charts row 1 */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                            <div style={card}>
+                            <div
+                                style={{
+                                    ...card,
+                                    transition: 'all 0.25s ease',
+                                    cursor: 'pointer'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-4px)'
+                                    e.currentTarget.style.borderColor = '#3b82f6'
+                                    e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.35)'
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)'
+                                    e.currentTarget.style.borderColor = '#2d3748'
+                                    e.currentTarget.style.boxShadow = 'none'
+                                }}
+                            >
                                 <div style={{ fontSize: '12px', color: '#718096', marginBottom: '12px', fontWeight: '600' }}>Revenue by category</div>
                                 <ResponsiveContainer width="100%" height={200}>
                                     <BarChart data={catData}>
@@ -303,7 +377,23 @@ export default function Dashboard({ user, onLogout }) {
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
-                            <div style={card}>
+                            <div
+                                style={{
+                                    ...card,
+                                    transition: 'all 0.25s ease',
+                                    cursor: 'pointer'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-4px)'
+                                    e.currentTarget.style.borderColor = '#3b82f6'
+                                    e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.35)'
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)'
+                                    e.currentTarget.style.borderColor = '#2d3748'
+                                    e.currentTarget.style.boxShadow = 'none'
+                                }}
+                            >
                                 <div style={{ fontSize: '12px', color: '#718096', marginBottom: '12px', fontWeight: '600' }}>Category share</div>
                                 <ResponsiveContainer width="100%" height={200}>
                                     <PieChart>
@@ -318,7 +408,23 @@ export default function Dashboard({ user, onLogout }) {
 
                         {/* Charts row 2 */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                            <div style={card}>
+                            <div
+                                style={{
+                                    ...card,
+                                    transition: 'all 0.25s ease',
+                                    cursor: 'pointer'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-4px)'
+                                    e.currentTarget.style.borderColor = '#3b82f6'
+                                    e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.35)'
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)'
+                                    e.currentTarget.style.borderColor = '#2d3748'
+                                    e.currentTarget.style.boxShadow = 'none'
+                                }}
+                            >
                                 <div style={{ fontSize: '12px', color: '#718096', marginBottom: '12px', fontWeight: '600' }}>Revenue by city</div>
                                 <ResponsiveContainer width="100%" height={200}>
                                     <BarChart data={cityData} layout="vertical">
@@ -329,7 +435,23 @@ export default function Dashboard({ user, onLogout }) {
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
-                            <div style={card}>
+                            <div
+                                style={{
+                                    ...card,
+                                    transition: 'all 0.25s ease',
+                                    cursor: 'pointer'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-4px)'
+                                    e.currentTarget.style.borderColor = '#3b82f6'
+                                    e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.35)'
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)'
+                                    e.currentTarget.style.borderColor = '#2d3748'
+                                    e.currentTarget.style.boxShadow = 'none'
+                                }}
+                            >
                                 <div style={{ fontSize: '12px', color: '#718096', marginBottom: '12px', fontWeight: '600' }}>Monthly revenue trend</div>
                                 <ResponsiveContainer width="100%" height={200}>
                                     <LineChart data={monthData}>
